@@ -9,11 +9,14 @@ import { getAuth,
          onAuthStateChanged
 } from 'firebase/auth';
 
-import {
-  getFirestore,
-  doc,
-  getDoc,
-  setDoc
+import {getFirestore,
+        doc,
+        getDoc,
+        setDoc,
+        collection,
+        writeBatch,
+        query,
+        getDocs
 } from 'firebase/firestore';
 
 const firebaseConfig = {
@@ -33,10 +36,40 @@ provider.setCustomParameters({
   prompt:"select_account"
 });
 
-
 export const auth = getAuth(firebaseApp);
 export const SignInWithGooglePopup = () =>signInWithPopup(auth, provider);
 export const db = getFirestore();
+
+
+
+//adding products to firebase
+export const addCollectionAndDocuments = async (collectionKey, objectsToAdd) => {
+  const collectionRef = collection(db, collectionKey);
+  const batch = writeBatch(db);
+
+  objectsToAdd.forEach((object) => {
+    const docRef = doc(collectionRef, object.title.toLowerCase());
+    batch.set(docRef, object);
+  });
+
+  await batch.commit();
+  console.log('data uploaded');
+}
+
+// getting data
+export const getCategoriesAndDocuments =  async () => {
+  const collectionRef = collection(db,'categories');
+  const q = query(collectionRef);
+
+  const querySnap = await getDocs(q);
+  const categoryMap = querySnap.docs.reduce((acc, docSnapshot) => {
+    const { title, items } = docSnapshot.data();
+    acc[title.toLowerCase()]=items;
+    return acc;
+  },{})
+
+  return categoryMap;
+}
 
 
 
